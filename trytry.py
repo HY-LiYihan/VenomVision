@@ -158,11 +158,14 @@ class Detector:
         }
 
     def preprocess_image(self, rgb_img):
-        # 将RGB图像转换为灰度图像
+        # 将 RGB 图像转换为灰度图像
         gray_img = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2GRAY)
 
         # 对灰度图像进行二值化处理
         _, binary_img = cv2.threshold(gray_img, self.binary_thres, 255, cv2.THRESH_BINARY)
+
+        # 将高于 230 的像素置为 0
+        # binary_img[gray_img > 240] = 0
 
         return binary_img
 
@@ -195,7 +198,8 @@ class Detector:
                                 sum_b += rgb_img[i, j, 0]
                     # 判断颜色
                     light.color = 'RED' if sum_r > sum_b else 'BLUE'
-                    lights.append(light)
+                    if np.abs(sum_b-sum_r)>200:
+                        lights.append(light)
 
         return lights
 
@@ -316,9 +320,9 @@ def main():
     set_angle(1,angle1)
     set_angle(2,angle2)
     time.sleep(0.5)
-    p = 0.2
+    p = 0.1
     i = 0.0
-    d = 0.02
+    d = 0.01
     pid1 = PID(p , i, d)
     pid2 = PID(p , i, d)
     previous_time = time.time()
@@ -358,7 +362,7 @@ def main():
             set_angle(1,angle1)
             set_angle(2,angle2)
         print(f"{angle1} {angle2}")
-        cv2.imshow('frame', binary_img)
+        # cv2.imshow('frame', binary_img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     cap.release()
