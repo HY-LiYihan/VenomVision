@@ -1,6 +1,7 @@
 # -- coding: utf-8 --
 
 import sys
+import os
 import ctypes
 import numpy as np
 import cv2
@@ -10,7 +11,7 @@ import time
 # Assuming MvCameraControl_class is in the specified path
 # Adjust the path if your SDK installation differs
 try:
-    sys.path.append("/opt/MVS/Samples/64/Python/MvImport")
+    sys.path.append(os.getcwd()+"/MvImport")
     from MvCameraControl_class import *
 except ImportError:
     print("Error: MvCameraControl_class not found.")
