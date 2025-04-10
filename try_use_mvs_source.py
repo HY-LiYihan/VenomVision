@@ -6,12 +6,16 @@ import time
 import sys
 from src.uart_servo import UartServoManager
 from src.data_table import *
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import CompressedImage
+
 
 class PID:
     def __init__(self, Kp, Ki, Kd, setpoint=0):
         """
         初始化 PID 控制器.
-        
+
         参数:
         Kp: 比例增益
         Ki: 积分增益
@@ -22,64 +26,63 @@ class PID:
         self.Ki = Ki
         self.Kd = Kd
         self.setpoint = setpoint
-        
+
         self.previous_error = 0
         self.integral = 0
 
     def update(self, feedback_value, dt):
         """
         更新 PID 控制器并计算输出.
-        
+
         参数:
         feedback_value: 当前反馈值
         dt: 时间间隔
-        
+
         返回:
         控制器输出
         """
         # 计算误差
         error = self.setpoint - feedback_value
-        
+
         # 计算积分部分
         self.integral += error * dt
-        
+
         # 计算微分部分
         derivative = (error - self.previous_error) / dt
-        
+
         # 计算 PID 输出
         output = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
-        
+
         # 保存误差以备下次计算微分部分
         self.previous_error = error
-        
+
         return output
 
+
 # 参数配置
-SERVO_PORT_NAME =  '/dev/ttyUSB0' 	# 舵机串口号
-SERVO_BAUDRATE = 115200 	# 舵机的波特率
-SERVO_ID = [1,2]				# 舵机ID 
-mid = [0,2047,2047]
-angle_range = [(0,0),(-1400,1400),(-650,1024)]
+SERVO_PORT_NAME = '/dev/ttyUSB0'  # 舵机串口号
+SERVO_BAUDRATE = 115200  # 舵机的波特率
+SERVO_ID = [1, 2]  # 舵机 ID
+mid = [0, 2047, 1023]
+angle_range = [(0, 0), (-1400, 1400), (-650, 1024)]
 # 初始化串口
-uart = serial.Serial(port=SERVO_PORT_NAME, baudrate=SERVO_BAUDRATE,\
-					 parity=serial.PARITY_NONE, stopbits=1,\
-					 bytesize=8,timeout=0)
+uart = serial.Serial(port=SERVO_PORT_NAME, baudrate=SERVO_BAUDRATE,
+                     parity=serial.PARITY_NONE, stopbits=1,
+                     bytesize=8, timeout=0)
 # 创建舵机对象
 uservo = UartServoManager(uart, servo_id_list=SERVO_ID)
 
 
-def set_angle(id,angle):
-    if (angle+mid[id]) >= (angle_range[id][1]+mid[id]):
-        uservo.set_position(id, angle_range[id][1]+mid[id])
-    elif (angle+mid[id]) <= (angle_range[id][0]+mid[id]):
-        uservo.set_position(id, angle_range[id][0]+mid[id])
+def set_angle(id, angle):
+    if (angle + mid[id]) >= (angle_range[id][1] + mid[id]):
+        uservo.set_position(id, angle_range[id][1] + mid[id])
+    elif (angle + mid[id]) <= (angle_range[id][0] + mid[id]):
+        uservo.set_position(id, angle_range[id][0] + mid[id])
     else:
-        uservo.set_position(id, angle+mid[id])
+        uservo.set_position(id, angle + mid[id])
 
 
-
-binary_thres = 200  # 设置二值化的阈值，默认为128
-
+binary_thres = 10  # 设置二值化的阈值，默认为 128
 max_ratio = 0.6  # 最大比例
 min_ratio = 0.1  # 最小比例
 max_angle = 45  # 最大倾斜角度
@@ -141,7 +144,7 @@ class Light:
 
 class Detector:
     def __init__(self, binary_thres=128, min_ratio=0.5, max_ratio=2.0, max_angle=45.0):
-        self.binary_thres = binary_thres  # 设置二值化的阈值，默认为128
+        self.binary_thres = binary_thres  # 设置二值化的阈值，默认为 128
         self.min_ratio = min_ratio  # 最小比例
         self.max_ratio = max_ratio  # 最大比例
         self.max_angle = max_angle  # 最大倾斜角度
@@ -149,12 +152,12 @@ class Detector:
         self.debug_armors = []  # 存储调试信息
         self.detect_color = 'RED'  # 设置检测颜色
         self.a = {
-           'min_light_ratio': 0.7,
+            'min_light_ratio': 0.7,
            'min_small_center_distance': 0.8,
            'max_small_center_distance': 3.2,
            'min_large_center_distance': 3.2,
            'max_large_center_distance': 5.5,
-           'max_angle': 35
+            'max_angle': 35
         }
 
     def preprocess_image(self, rgb_img):
@@ -198,7 +201,7 @@ class Detector:
                                 sum_b += rgb_img[i, j, 0]
                     # 判断颜色
                     light.color = 'RED' if sum_r > sum_b else 'BLUE'
-                    if np.abs(sum_b-sum_r)>200:
+                    if np.abs(sum_b - sum_r) > 200:
                         lights.append(light)
 
         return lights
@@ -220,7 +223,7 @@ class Detector:
         }
         self.debug_lights.append(light_data)
 
-        # 更新Light对象的属性
+        # 更新 Light 对象的属性
         light.is_light = is_light
         if not is_light:
             print(light_data, f'ratio_ok:{ratio_ok},angle_ok:{angle_ok}')
@@ -264,7 +267,8 @@ class Detector:
             if test_light == light_1 or test_light == light_2:
                 continue
 
-            if cv2.pointPolygonTest(box, test_light.top, False) >= 0 or cv2.pointPolygonTest(box, test_light.bottom, False) >= 0:
+            if cv2.pointPolygonTest(box, test_light.top, False) >= 0 or cv2.pointPolygonTest(box, test_light.bottom,
+                                                                                              False) >= 0:
                 return True
 
         return False
@@ -276,7 +280,8 @@ class Detector:
 
         # Distance between the center of 2 lights (unit : light length)
         avg_light_length = (light_1.length + light_2.length) / 2
-        center_distance = cv2.norm(cv2.Mat(np.array(light_1.center, dtype=np.float32)) - cv2.Mat(np.array(light_2.center, dtype=np.float32))) / avg_light_length
+        center_distance = cv2.norm(
+            cv2.Mat(np.array(light_1.center, dtype=np.float32)) - cv2.Mat(np.array(light_2.center, dtype=np.float32))) / avg_light_length
         center_distance_ok = (self.a['min_small_center_distance'] <= center_distance < self.a['max_small_center_distance']) or \
                              (self.a['min_large_center_distance'] <= center_distance < self.a['max_large_center_distance'])
 
@@ -309,31 +314,35 @@ class Detector:
         return type_
 
 
-def main():
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))  # 设置像素格式为 MJPG
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # 设置宽度
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)  # 设置高度
-    cap.set(cv2.CAP_PROP_FPS, 180)           # 设置帧率
-    detector = Detector(binary_thres=binary_thres, min_ratio=min_ratio, max_ratio=max_ratio, max_angle=max_angle)
-    angle1,angle2=0,969
-    set_angle(1,angle1)
-    set_angle(2,angle2)
-    time.sleep(0.5)
-    p = 0.1
-    i = 0.0
-    d = 0.01
-    pid1 = PID(p , i, d)
-    pid2 = PID(p , i, d)
-    previous_time = time.time()
-    while True:
-        dots = []
-        ret, frame = cap.read()
-        if not ret:
-            break  # 读取失败时退出循环
-        binary_img = detector.preprocess_image(frame)
-        lights = detector.find_lights(binary_img, frame)
-        armors = detector.matchLights(lights)
+class ImageSubscriber(Node):
+    def __init__(self):
+        super().__init__('image_subscriber')
+        self.subscription = self.create_subscription(
+            CompressedImage,
+            '/image_raw/compressed',
+            self.listener_callback,
+            10)
+        self.subscription  # prevent unused variable warning
+        self.detector = Detector(binary_thres=binary_thres, min_ratio=min_ratio, max_ratio=max_ratio,
+                                 max_angle=max_angle)
+        self.angle1, self.angle2 = 0, 969
+        set_angle(1, self.angle1)
+        set_angle(2, self.angle2)
+        time.sleep(0.5)
+        self.p = 0.05
+        self.i = 0.0
+        self.d = 0.005
+        self.pid1 = PID(self.p, self.i, self.d)
+        self.pid2 = PID(self.p, self.i, self.d)
+        self.previous_time = time.time()
+
+    def listener_callback(self, msg):
+        np_arr = np.frombuffer(msg.data, np.uint8)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+        binary_img = self.detector.preprocess_image(frame)
+        lights = self.detector.find_lights(binary_img, frame)
+        armors = self.detector.matchLights(lights)
 
         binary_img = cv2.cvtColor(binary_img, cv2.COLOR_GRAY2BGR)
         for light in lights:
@@ -348,26 +357,34 @@ def main():
             cv2.line(binary_img, (int(left_x), int(left_y)), (int(right_x), int(right_y)), (0, 0, 255), 2)
             cv2.putText(binary_img, armor.type.value, ((int(left_x) + int(right_x)) // 2, (int(left_y) + int(right_y)) // 2),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-        h,w,c = frame.shape
+        h, w, c = frame.shape
         if len(armors) > 0:
             # 获取当前时间
             current_time = time.time()
             cX = armors[0].center[0]
             cY = armors[0].center[1]
             # 计算时间间隔
-            dt = current_time - previous_time
-            previous_time = current_time
-            angle1 += pid1.update(cX - w//2, dt)
-            angle2 += pid2.update(-(cY - h//2), dt)
-            set_angle(1,angle1)
-            set_angle(2,angle2)
-        print(f"{angle1} {angle2}")
+            dt = current_time - self.previous_time
+            self.previous_time = current_time
+            self.angle1 += self.pid1.update(cX - w // 2, dt)
+            self.angle2 += self.pid2.update((cY - h // 2), dt)
+            set_angle(1, self.angle1)
+            set_angle(2, self.angle2)
+        print(f"{self.angle1} {self.angle2}")
         cv2.imshow('frame', binary_img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    cap.release()
-    cv2.destroyAllWindows()
+            rclpy.shutdown()
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    image_subscriber = ImageSubscriber()
+    rclpy.spin(image_subscriber)
+    image_subscriber.destroy_node()
+    rclpy.shutdown()
 
 
 if __name__ == '__main__':
     main()
+
+    
