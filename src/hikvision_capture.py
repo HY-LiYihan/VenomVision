@@ -12,7 +12,7 @@ try:
     # Adjust this path if your MVS SDK installation differs
     # Or ensure the path is added to your system's PYTHONPATH environment variable
     sys.path.append(os.getcwd()+"/src/MvImport") # Example path
-    from MvCameraControl_class import *
+    from src.MvImport.MvCameraControl_class import *
 except ImportError as e:
     print(f"Error: MvCameraControl_class not found. {e}")
     print("Please ensure the MVS SDK Python samples path is correct or in PYTHONPATH.")
@@ -343,10 +343,10 @@ class HikvisionCamera:
                  print(f"Error creating NumPy array from buffer: {e}")
                  return False, None
 
-        elif ret == MV_E_TIMEOUT:
-            # Expected case when no new frame is ready within the timeout
-            # print("Timeout getting image buffer.")
-            return False, None
+        # elif ret == MV_E_TIMEOUT:
+        #     # Expected case when no new frame is ready within the timeout
+        #     # print("Timeout getting image buffer.")
+        #     return False, None
         elif ret == MV_E_NODATA:
              print("Warning: MV_E_NODATA received.")
              return False, None

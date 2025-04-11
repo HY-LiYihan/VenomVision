@@ -10,9 +10,9 @@ import time
 import logging
 import serial
 import struct
-from src.pans.packet import Packet
-from src.pans.packet_buffer import PacketBuffer
-from src.pans.data_table import *
+from src.GimbalServo.packet import Packet
+from src.GimbalServo.packet_buffer import PacketBuffer
+from src.GimbalServo.data_table import *
 
 class UartServoInfo:
 	'''串口舵机的信息'''

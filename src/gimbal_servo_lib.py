@@ -8,7 +8,7 @@ import time
 # The user of this library is responsible for ensuring this path is correct
 # or that UartServoManager is otherwise importable.
 try:
-    from src.pans.uart_servo import UartServoManager
+    from src.GimbalServo.uart_servo import UartServoManager
     # print("Debug: UartServoManager imported in library.") # Optional debug print
 except ImportError as e:
     print(f"CRITICAL ERROR in gimbal_servo_lib: Failed to import UartServoManager.")

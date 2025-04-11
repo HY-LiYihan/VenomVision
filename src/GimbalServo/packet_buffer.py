@@ -8,7 +8,7 @@
 '''
 import logging
 import struct
-from src.pans.packet import Packet
+from src.GimbalServo.packet import Packet
 
 class PacketBuffer:
 	'''Packet中转站'''
