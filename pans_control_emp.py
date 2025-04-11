@@ -64,12 +64,12 @@ try:
     print("\nStarting head shake loop (Press Ctrl+C to exit)...")
     while True:
         # Move to maximum deviation (e.g., right)
-        print(f"Moving to max deviation ({YAW_MAX_DEV})...")
+        print(f"Moving to half of max deviation ({YAW_MAX_DEV/2})...")
         yaw_servo.set_deviation(YAW_MAX_DEV/2)
         time.sleep(SLEEP_DURATION)
 
         # Move to minimum deviation (e.g., left)
-        print(f"Moving to min deviation ({YAW_MIN_DEV})...")
+        print(f"Moving to half of min deviation ({YAW_MIN_DEV/2})...")
         yaw_servo.set_deviation(YAW_MIN_DEV/2)
         time.sleep(SLEEP_DURATION)
 
