@@ -1,29 +1,51 @@
-# src/Detect/light.py
-import numpy as np
 import cv2
+import numpy as np
 
 class Light:
-    def __init__(self, box):
+    def __init__(self, rect):
         # 存储传入的旋转矩形
-        self.box = box
-        # 获取旋转矩形的四个顶点
-        points = cv2.boxPoints(box)
-        points = np.int0(points)
-        # 按 y 坐标排序
-        sorted_points = sorted(points, key=lambda p: p[1])
-        # 计算顶部和底部的中心点
-        self.top = (sorted_points[0] + sorted_points[1]) / 2
-        self.bottom = (sorted_points[2] + sorted_points[3]) / 2
-        self.center_x, self.center_y = int(box[0][0]), int(box[0][1])
-        self.center = (self.center_x, self.center_y)
-        # 计算长度和宽度
-        # self.width, self.length = box[1]
-        self.length = np.linalg.norm(self.top - self.bottom)
-        self.width = np.linalg.norm(sorted_points[0] - sorted_points[1])
-        # 计算倾斜角度
-        # self.tilt_angle = box[2]
-        self.tilt_angle = np.arctan2(np.abs(self.top[0] - self.bottom[0]), np.abs(self.top[1] - self.bottom[1]))
-        self.tilt_angle = self.tilt_angle / np.pi * 180
-        # 初始化颜色
+        self.rect = rect
+        self.center = rect[0]
+        self.size = rect[1]
+        self.angle = rect[2]
+        
+        # 确保宽度小于高度
+        if self.size[0] < self.size[1]:
+            self.size = (self.size[1], self.size[0])
+            self.angle += 90
+        
+        # 修正角度在 -90 到 90 之间
+        if self.angle >= 90:
+            self.angle -= 180
+        
+        # 计算最小外接矩形的四个角点
+        self.box = cv2.boxPoints(rect)
+        self.box = np.int0(self.box)  # 转换为整数坐标
+        
+        # 初始化颜色和状态
         self.color = None
         self.is_light = False
+        
+        # 计算上边和下边的中点
+        self.top = self.calculate_top_bottom('top')
+        self.bottom = self.calculate_top_bottom('bottom')
+    
+    def calculate_top_bottom(self, position):
+        # 根据y坐标确定上边和下边的中点
+        if position == 'top':
+            # 上边：y坐标最小的两个点
+            points = sorted(self.box, key=lambda p: p[1])[:2]
+        elif position == 'bottom':
+            # 下边：y坐标最大的两个点
+            points = sorted(self.box, key=lambda p: p[1])[2:]
+        
+        # 计算中点
+        mid_x = (points[0][0] + points[1][0]) / 2
+        mid_y = (points[0][1] + points[1][1]) / 2
+        return (mid_x, mid_y)
+
+# 示例使用
+rect = ((250, 250), (100, 200), 45)  # 假设一个旋转矩形的中心点、大小和角度
+light = Light(rect)
+print("Top midpoint:", light.top)
+print("Bottom midpoint:", light.bottom)

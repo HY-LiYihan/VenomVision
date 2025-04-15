@@ -14,6 +14,31 @@ from src.Detect.detector import Detector
 import cv2
 import time
 import numpy as np
+def draw_armor(image, armor, color=(0, 255, 0), thickness=2):
+    """
+    在图像上绘制 Armor 结构体
+    :param image: 原始图像
+    :param armor: Armor 对象
+    :param color: 绘制颜色
+    :param thickness: 线宽
+    :return: 带绘制的图像
+    """
+    if armor.left_light and armor.right_light:
+        # 画左右灯条的矩形框
+        left_box = np.int0(armor.left_light.box)
+        right_box = np.int0(armor.right_light.box)
+        cv2.drawContours(image, [left_box], 0, (0, 0, 255), thickness)  # 左边蓝色
+        cv2.drawContours(image, [right_box], 0, (0, 0, 255), thickness)  # 右边红色
+
+        # 画中心点
+        center = tuple(map(int, armor.center))
+        cv2.circle(image, center, 4, color, -1)
+
+        # 显示装甲板编号和置信度
+        label = f"{armor.number} ({armor.confidence:.2f})"
+        cv2.putText(image, label, (center[0] + 10, center[1] - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+    return image
 
 try:
     # 初始化海康威视 SDK
@@ -56,14 +81,41 @@ try:
             binary_img = detector.preprocess_image(frame_rgb)
 
             # 查找灯条
-            lights,boxes = detector.find_lights(binary_img, frame_rgb)
+            lights = detector.find_lights(binary_img, frame_rgb)
 
             # 在原始图像上可视化灯条
             frame_with_lights = frame_bgr.copy()
-            for box in boxes:
-                        # 可选：在RGB图像上绘制最小外接矩形进行可视化
-                if frame_with_lights is not None:
-                    cv2.drawContours(frame_with_lights, [box], 0, (0, 0, 255), 2)
+            # for light in lights:
+            #     box = light.box.astype(np.int32)
+            #             # 可选：在RGB图像上绘制最小外接矩形进行可视化
+            #     if frame_with_lights is not None:
+            #         cv2.drawContours(frame_with_lights, [box], 0, (0, 0, 255), 2)
+            armors = detector.matchLights(lights)
+            if armors is not []:
+                for armor in armors:
+                    draw_armor(frame_with_lights, armor, color=(0, 255, 0), thickness=2)
+                    # # 将旋转矩形的四个角点转换为整数坐标
+                    # points = armor.left_light.box[0:2]
+                    # points.append(armor.right_light.box[0:2])
+                    # # 绘制轮廓
+                    # cv2.drawContours(frame_with_lights, [points], 0, (255, 0, 0), 2)
+                    # # 绘制中心点
+                    # center = int(armor.center)
+                    # cv2.circle(frame_with_lights, center, 3, (0, 255, 0), -1)  # 绿色
+                    # # 标注颜色
+                    # cv2.putText(frame_with_lights, armor.color, (center[0] + 5, center[1] + 5),
+                    #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 1)
+                    # # 标注类型
+                    # cv2.putText(frame_with_lights, armor.type.name, (center[0] + 5, center[1] + 20),
+                    #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 1)
+                    # # 打印装甲板信息
+                    # print(f"Armor Type: {armor.type.name}, Color: {armor.color}")
+                    # # 打印灯条信息
+                    # print(f"Light Center: {light.center}, Light Size: {light.size}, Light Angle: {light.angle}")
+                    # # 打印装甲板信息
+                    # print(f"Armor Center: {armor.center}, Armor Size: {armor.size}, Armor Angle: {armor.angle}")
+                    # # 打印匹配的灯条信息
+                    # print(f"Matched Lights: {armor.lights}")
                     # cv2.circle(rgb_img, center, 3, (0, 255, 0), -1) # 绘制中心点
             # for light in lights:
             #     # 将旋转矩形的四个角点转换为整数坐标
@@ -95,3 +147,7 @@ finally:
     # 关闭所有 OpenCV 窗口
     cv2.destroyAllWindows()
     print("应用程序结束。")
+    
+import cv2
+import numpy as np
+
