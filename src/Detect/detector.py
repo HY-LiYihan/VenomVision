@@ -5,11 +5,24 @@ from src.Detect.light import Light
 from src.Detect.armor import Armor, ArmorType
 
 class Detector:
-    def __init__(self, binary_thres=100, min_ratio=3.5, max_ratio=14.0, max_angle=45.0):
+    def __init__(self, binary_thres=128, min_ratio=3.5, max_ratio=14.0, max_angle=45.0, min_light_ratio=0.7, max_armor_angle=30.0):
+        """
+        初始化检测器。
+        :param binary_thres: 二值化阈值，默认为 128
+        :param min_ratio: 最小比例，默认为 3.5
+        :param max_ratio: 最大比例，默认为 14.0
+        :param max_angle: 最大倾斜角度，默认为 45.0
+        :param min_light_ratio: 最小灯光比例，默认为 0.7
+        :param max_armor_angle: 最大装甲板角度，默认为 30.0
+        """
+        # 初始化参数
+        
         self.binary_thres = binary_thres  # 设置二值化的阈值，默认为 128
         self.min_ratio = min_ratio  # 最小比例
         self.max_ratio = max_ratio  # 最大比例
         self.max_angle = max_angle  # 最大倾斜角度
+        self.min_light_ratio = min_light_ratio  # 最小灯光比例
+        self.max_armor_angle = max_armor_angle  # 最大装甲板角度
         self.debug_lights = []  # 存储调试信息
         self.debug_armors = []  # 存储调试信息
         self.detect_color = 'RED'  # 设置检测颜色
@@ -59,7 +72,7 @@ class Detector:
             # 获取最小外接矩形
             rect = cv2.minAreaRect(contour)
             light = Light(rect)
-            if light.size[0] < 10 or light.size[1] < 10:
+            if light.size[0] < 10 or light.size[1] < 2:
                 continue
             if self.is_light(light):
                 # 获取外接矩形
@@ -162,7 +175,7 @@ class Detector:
         # Loop all the pairing of lights
         for i in range(len(lights)):
             for j in range(i + 1, len(lights)):
-                print(f"Matching lights {i} and {j}")
+                # print(f"Matching lights {i} and {j}")
                 light_1 = lights[i]
                 light_2 = lights[j]
                 if light_1.color != self.detect_color or light_2.color != self.detect_color:
@@ -170,12 +183,12 @@ class Detector:
 
                 # 假设 containLight 函数已经定义
                 if self.containLight(light_1, light_2, lights):
-                    print(f"Lights {i} and {j} contain, skipping")
+                    # print(f"Lights {i} and {j} contain, skipping")
                     continue
 
                 # 假设 isArmor 函数已经定义
                 type_ = self.isArmor(light_1, light_2)
-                print(f"Armor type: {type_}")
+                # print(f"Armor type: {type_}")
                 if type_ != ArmorType.INVALID:
                     armor = Armor(light_1, light_2)
                     armor.type = type_
@@ -203,16 +216,16 @@ class Detector:
 
     def isArmor(self, light_1, light_2):
         # Ratio of the length of 2 lights (short side / long side)
-        light_length_ratio = min(light_1.size[1], light_2.size[1]) / max(light_1.size[1], light_2.size[1])
-        light_ratio_ok = True#light_length_ratio > self.a['min_light_ratio']
-        print(f"Light ratio: {light_length_ratio}, light_ratio_ok: {light_ratio_ok}")
+        light_length_ratio = min(light_1.size[0], light_2.size[0]) / max(light_1.size[0], light_2.size[0])
+        light_ratio_ok = light_length_ratio > self.a['min_light_ratio']
+        # print(f"Light ratio: {light_length_ratio}, light_ratio_ok: {light_ratio_ok}")
 
         # Distance between the center of 2 lights (unit : light length)
-        avg_light_length = (light_1.size[1] + light_2.size[1]) / 2
+        avg_light_length = (light_1.size[0] + light_2.size[0]) / 2
         center_distance = cv2.norm(
             cv2.Mat(np.array(light_1.center, dtype=np.float32)) - cv2.Mat(np.array(light_2.center, dtype=np.float32))) / avg_light_length
-        center_distance_ok = True#(self.a['min_small_center_distance'] <= center_distance < self.a['max_small_center_distance']) or \
-                            #  (self.a['min_large_center_distance'] <= center_distance < self.a['max_large_center_distance'])
+        center_distance_ok = (self.a['min_small_center_distance'] <= center_distance < self.a['max_small_center_distance']) or \
+            (self.a['min_large_center_distance'] <= center_distance < self.a['max_large_center_distance'])
 
         # Angle of light center connection
         diff = (light_1.center[0] - light_2.center[0], light_1.center[1] - light_2.center[1])
@@ -220,7 +233,7 @@ class Detector:
             angle = abs(np.arctan(diff[1] / diff[0])) * 180 / np.pi
         else:
             angle = 90  # 避免除零错误
-        angle_ok = angle < self.a['max_angle']
+        angle_ok = angle < self.max_armor_angle
 
         is_armor = light_ratio_ok and center_distance_ok and angle_ok
 
@@ -228,7 +241,7 @@ class Detector:
         if is_armor:
             type_ = ArmorType.LARGE if center_distance > self.a['min_large_center_distance'] else ArmorType.SMALL
         else:
-            print(f"Armor detection failed: light_ratio_ok: {light_ratio_ok}, center_distance_ok: {center_distance_ok}, angle_ok: {angle_ok}")
+            # print(f"Armor detection failed: light_ratio_ok: {light_ratio_ok}, center_distance_ok: {center_distance_ok}, angle_ok: {angle_ok}")
             type_ = ArmorType.INVALID
 
         # Fill in debug information
