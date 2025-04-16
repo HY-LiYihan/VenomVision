@@ -44,3 +44,11 @@ class PID:
         self.previous_error = error
 
         return output
+
+    def reset(self):
+        """
+        清空积分项和上一次的误差
+        """
+        self.integral = 0
+        self.previous_error = 0
+    

@@ -5,7 +5,7 @@ from src.Detect.light import Light
 from src.Detect.armor import Armor, ArmorType
 
 class Detector:
-    def __init__(self, binary_thres=128, min_ratio=3.5, max_ratio=14.0, max_angle=45.0, min_light_ratio=0.7, max_armor_angle=30.0):
+    def __init__(self, binary_thres=128, min_ratio=3.5, max_ratio=16.0, max_angle=45.0, min_light_ratio=0.7, max_armor_angle=30.0):
         """
         初始化检测器。
         :param binary_thres: 二值化阈值，默认为 128

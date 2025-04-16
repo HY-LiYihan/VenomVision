@@ -14,7 +14,8 @@ from src.Detect.detector import Detector
 import cv2
 import time
 import numpy as np
-def draw_armor(image, armor, color=(0, 255, 0), thickness=2):
+
+def draw_armor(image, armor, color=(0, 255, 0), thickness=1):
     """
     在图像上绘制 Armor 结构体
     :param image: 原始图像
@@ -27,17 +28,27 @@ def draw_armor(image, armor, color=(0, 255, 0), thickness=2):
         # 画左右灯条的矩形框
         left_box = np.int0(armor.left_light.box)
         right_box = np.int0(armor.right_light.box)
-        cv2.drawContours(image, [left_box], 0, (0, 0, 255), thickness)  # 左边蓝色
-        cv2.drawContours(image, [right_box], 0, (0, 0, 255), thickness)  # 右边红色
+        cv2.drawContours(image, [left_box], 0, (0, 0, 255), thickness)
+        cv2.drawContours(image, [right_box], 0, (0, 0, 255), thickness)
 
         # 画中心点
         center = tuple(map(int, armor.center))
         cv2.circle(image, center, 4, color, -1)
 
         # 显示装甲板编号和置信度
-        label = f"{armor.number} ({armor.confidence:.2f})"
-        cv2.putText(image, label, (center[0] + 10, center[1] - 10),
+        label = f"{center}"
+        cv2.putText(image, label, (center[0] - 50, center[1] - 20),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+        # 绘制对角线
+        left_diagonal_start = tuple(map(int, armor.left_light.top))
+        left_diagonal_end = tuple(map(int, armor.right_light.bottom))
+        cv2.line(image, left_diagonal_start, left_diagonal_end, color, thickness)
+
+        right_diagonal_start = tuple(map(int, armor.right_light.top))
+        right_diagonal_end = tuple(map(int, armor.left_light.bottom))
+        cv2.line(image, right_diagonal_start, right_diagonal_end, color, thickness)
+
     return image
 
 try:
